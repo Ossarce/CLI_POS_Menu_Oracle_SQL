@@ -1,6 +1,4 @@
 
-import pandas as pd 
-
 ###################################################################################################
 ## Funciones universales.
 
@@ -11,28 +9,6 @@ def validate_number_input():
         if value.isdigit():
             return int(value)
         print("Valor invalido. Por favor ingrese un numero.")
-
-# Aqui validamos si el archivo existe o no (siendo file name el nombre completo del archivo o guardamos el path en una variable -que es lo que hacemos mas abajo).
-def excel_file_exists(filename):
-    try:
-        pd.read_excel(filename, engine='openpyxl')
-        return True
-    except FileNotFoundError:
-        return False
-
-# Esta funcion (como su nombre indica) importa los datos desde el excel. Prueba primero si es posible leer el archivo -que se entrega como argumento- de ser esto posible lo devuelve, hasta el momento solo maneja una excepcion, que corre si es que el archivo no existe devolviendo un Data Frame vacio.
-def import_data_from_excel(filename):
-    try:
-        df = pd.read_excel(filename)
-        return df.to_dict(orient='records')
-    except FileNotFoundError:
-        print(f"Archivo '{filename}' no encontrado, corriendo el programa por primera vez.")
-        return []
-
-# Con esta funcion se exportan los datos de las variables, lo primero que hace es transformar la lista de diccionarios a un Data Frame -para que pandas pueda trabajar con los datos- y luego ese Data Frame lo manda a un archivo excel(filename), en cuanto al segundo argumento(index = False) se escribe para que el DF no se guarde con su indice.
-def export_data_to_excel(data, filename):
-    df = pd.DataFrame(data)
-    df.to_excel(filename, index=False)
 
 ###################################################################################################
 ## Estas funciones son para el primer menu, donde se inicia la sesion.
@@ -97,8 +73,6 @@ def create_user(users):
         password = input()
         new_user = {'username': username, 'password': password}
         users.append(new_user)
-        # Una vez que el nuevo usuario es agregado a la lista, se exporta la informacion de la lista a un excel.
-        export_data_to_excel(users, users_data_file)
         print('--*** Usuario creado con exito! ***--')
     else: 
         print('**** Usuario o contraseña invalidos para crear usuarios ****')
@@ -142,8 +116,6 @@ def create_product(products):
     }
 
     products.append(product_info)
-    # Una vez que el nuevo producto es agregado a la lista, se exporta la informacion de la lista a un excel.
-    export_data_to_excel(products, products_data_file)
     print('*** Producto creado con exito! ***')
 
     print('Deseas crear otro producto? (Y/N): ')
@@ -193,8 +165,6 @@ def create_customer(customers):
     }
 
     customers.append(customer_info)
-    # Una vez que el nuevo cliente es agregado a la lista, se exporta la informacion de la lista a un excel.
-    export_data_to_excel(customers, customers_data_file)
     print('Cliente creado existosamente!')
 
     print('Deseas crear otro cliente? (Y/N): ')
@@ -301,11 +271,6 @@ def sale(customers, products, daily_sales):
         product["stock"] -= cantidad
 
     daily_sales.append(boleta)
-    # Al realizar el reporte diario, justo antes de cerrar el programa exportamos a un excel llamado "closure_report". Esta variable a diferencia de las otras se exportan en otro "formato"(revisar los respectivos excel para entender a cabalidad), esto debido a que los datos solo salen a diferencia de products, customers y users que se importan nuevamente al codigo. 
-    export_data_to_excel(daily_sales, daily_sales_data_file)
-     # Una vez que el nuevo producto es agregado a la lista, se exporta la informacion de la lista a un excel.
-    export_data_to_excel(products, products_data_file)
-
     print('--- Venta registrada exitosamente! ---')
 
     return
@@ -370,8 +335,6 @@ def daily_closure(daily_sales, closure_report):
     closure_report.append(report)
 
     print('\n')
-    # Al realizar el reporte diario, justo antes de cerrar el programa exportamos a un excel llamado "closure_report". Esta variable a diferencia de las otras se exportan en otro "formato"(revisar los respectivos excel para entender a cabalidad), esto debido a que los datos solo salen a diferencia de products, customers y users que se importan nuevamente al codigo. 
-    export_data_to_excel(closure_report, closure_report_data_file)
 
     exit()
 
@@ -379,13 +342,15 @@ def daily_closure(daily_sales, closure_report):
 def main_menu():
     running = True
 
-    products = import_data_from_excel(products_data_file) if products_data_exists else [ 
+    # products = import_data_from_excel(products_data_file) if products_data_exists else 
+    products = [ 
                 {'codigo': 1, 'nombre': 'angelo sosa', 'categoria': 'cafe', 'stock': 6, 'precio': 2000}, 
                 {'codigo': 2, 'nombre': 'hario mss1', 'categoria': 'molino', 'stock': 3, 'precio': 5000},
                 {'codigo': 3, 'nombre': 'aeropress go', 'categoria': 'metodos y filtros', 'stock': 5, 'precio': 12000}
             ]
     
-    customers = import_data_from_excel(customers_data_file) if customers_data_exists else [
+    # customers = import_data_from_excel(customers_data_file) if customers_data_exists else 
+    customers = [
             {'nombre': 'Pedro', 'apellido': 'Paramo', 'rut': 1980, 'email': 'pparamo@example.com', 'telefono': 171800200171}, 
             {'nombre': 'Alberto', 'apellido': 'Borges', 'rut': 1190, 'email': 'alberto.borges@example.com', 'telefono': 800360360}
         ]
@@ -429,46 +394,15 @@ def main_menu():
 
 ###################################################################################################
 ## Con este codigo hacemos correr el menu de inicio de sesion.
-
-# Se declaran las variables que contienen los nombres de los archivos (products) y su extension(.xlsx) del archivo que almacena los datos.
-products_data_file = "products.xlsx"
-customers_data_file = "customers.xlsx"
-users_data_file = "users.xlsx"
-daily_sales_data_file = "daily_sales.xlsx"
-closure_report_data_file = "closure_report.xlsx"
-
-# Esta lista solo sirve para correr el codigo de abajo.
-file_paths = [
-    products_data_file,
-    customers_data_file,
-    users_data_file,
-    daily_sales_data_file,
-    closure_report_data_file
-]
-
-# Aqui se almacerana los resultdados del for loop que esta abajo.
-file_exists = {}
-
-# Aca corre el loop que de existir los archivos con la funcion universal que esta arriba y va almacenando las variables en el diccionario file_exists.
-for file_path in file_paths:
-    file_exists[file_path] = excel_file_exists(file_path)
-    if not file_exists[file_path]:
-        print(f"Archivo '{file_path}' no encontrado.")
-
-# Aqui luego se asigna si los valores dentro del diccionario file_exists -para cada archivo- quedan con un True o un False. Mas abajo se ve donde se usan estas variables.
-products_data_exists = file_exists.get(products_data_file, False)
-customers_data_exists = file_exists.get(customers_data_file, False)
-users_data_exists = file_exists.get(users_data_file, False)
-
-
 running = True
 
 # Aca usando if else shorthand, le damos dos opciones a la variable para ser llenada con data, si users_data_exists es True, se llama a la funcion import_data_from_excel usando como argumento el path al documento que contiene la data de los usuarios, de no ser False, se le asignan valores predeterminados.
-users = import_data_from_excel(users_data_file) if users_data_exists else [{'username': 'benjamin', 'password': 'pass'}, {'username': 'evelyn', 'password': 'pass'}, {'username': 'rafael', 'password': 'pass'}]
+# users = import_data_from_excel(users_data_file) if users_data_exists else
+
+users = [{'username': 'benjamin', 'password': 'pass'}, {'username': 'evelyn', 'password': 'pass'}, {'username': 'rafael', 'password': 'pass'}]
 
 current_user = []
 
-print(file_exists)
 while running:
     login_choice = login_menu()
 
