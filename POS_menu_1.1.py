@@ -1,8 +1,5 @@
-# Importamos Pandas para realizar el importe y el exporte de datos a un excel.
-## NOTA: Se debe instalar pandas y openpyxl para que el programa corra.
-## Para realizar la instalacion usamos los siguientes comandos en la terminal: pip install pandas y pip install openpyxl.
-## si la terminal devuelve algo similar "command not found: pip" agregar un 3 a pip quedando: pip3 install...
-import pandas as pd 
+
+# import pandas as pd 
 
 ###################################################################################################
 ## Funciones universales.
