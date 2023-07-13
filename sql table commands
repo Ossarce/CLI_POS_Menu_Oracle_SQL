@@ -1,0 +1,25 @@
+CREATE TABLE products (
+  codigo NUMBER PRIMARY KEY,
+  nombre VARCHAR2(100),
+  categoria VARCHAR2(100),
+  stock NUMBER,
+  precio NUMBER
+);
+
+
+CREATE TABLE users (
+  id NUMBER PRIMARY KEY,
+  username VARCHAR2(100),
+  password VARCHAR2(100)
+);
+
+
+CREATE TABLE customers (
+  id NUMBER PRIMARY KEY,
+  nombre VARCHAR2(100),
+  apellido VARCHAR2(100),
+  rut NUMBER,
+  email VARCHAR2(100),
+  telefono NUMBER
+);
+

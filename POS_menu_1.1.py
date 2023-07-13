@@ -1,6 +1,18 @@
+import cx_Oracle
+from products import fetch_products, insert_products
+
+cx_Oracle.init_oracle_client(lib_dir="/Users/esteban/Downloads/instantclient_19_8")
+
+username = 'ESTEBAN_ARCE'
+password = '123456'
+host = '54.213.164.78'
+port = '1521'
+
+connection = cx_Oracle.connect(username, password, host + ':' + port + '/')
 
 ###################################################################################################
 ## Funciones universales.
+###################################################################################################
 
 #Esta funcion valida que los valores en el input sean solo numeros.
 def validate_number_input():
@@ -91,9 +103,10 @@ def show_users(users):
 
 ###################################################################################################
 ## Esta funciones son las necesarias para hacer correr el menu de la comanda POS.
+###################################################################################################
 
 #  Esta funcion crea un producto y lo agrega a la lista products como diccionario.
-def create_product(products):
+def create_product(products, connection):
     print('*** Creando un nuevo producto! ***\n')
 
     print('Ingresa el codigo del producto: ')
@@ -117,6 +130,8 @@ def create_product(products):
 
     products.append(product_info)
     print('*** Producto creado con exito! ***')
+
+    insert_products(connection, products)
 
     print('Deseas crear otro producto? (Y/N): ')
     choice = input()
@@ -343,11 +358,8 @@ def main_menu():
     running = True
 
     # products = import_data_from_excel(products_data_file) if products_data_exists else 
-    products = [ 
-                {'codigo': 1, 'nombre': 'angelo sosa', 'categoria': 'cafe', 'stock': 6, 'precio': 2000}, 
-                {'codigo': 2, 'nombre': 'hario mss1', 'categoria': 'molino', 'stock': 3, 'precio': 5000},
-                {'codigo': 3, 'nombre': 'aeropress go', 'categoria': 'metodos y filtros', 'stock': 5, 'precio': 12000}
-            ]
+    products = []
+    products = fetch_products(connection, products)
     
     # customers = import_data_from_excel(customers_data_file) if customers_data_exists else 
     customers = [
@@ -376,7 +388,7 @@ def main_menu():
         choice = validate_number_input()
         if 1 <= choice <= 7:
             if choice == 1:
-                create_product(products)
+                create_product(products, connection)
             elif choice == 2:
                 show_products(products)
             elif choice == 3:
