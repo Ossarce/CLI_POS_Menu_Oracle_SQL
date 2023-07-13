@@ -1,7 +1,8 @@
 import cx_Oracle
 
 from products import fetch_products, insert_products, update_product_stock
-from users import fetch_users, insert_users
+from users import fetch_users, insert_user
+from customers import fetch_customers, insert_customer
 
 cx_Oracle.init_oracle_client(lib_dir="/Users/esteban/Downloads/instantclient_19_8")
 
@@ -89,7 +90,7 @@ def create_user(users):
         users.append(new_user)
         print('--*** Usuario creado con exito! ***--')
 
-        insert_users(connection, new_user)     
+        insert_user(connection, new_user)     
 
     else: 
         print('**** Usuario o contraseña invalidos para crear usuarios ****')
@@ -186,6 +187,7 @@ def create_customer(customers):
 
     customers.append(customer_info)
     print('Cliente creado existosamente!')
+    insert_customer(connection, customer_info)
 
     print('Deseas crear otro cliente? (Y/N): ')
     choice = input()
@@ -366,11 +368,8 @@ def main_menu():
     products = []
     products = fetch_products(connection, products)
     
-    # customers = import_data_from_excel(customers_data_file) if customers_data_exists else 
-    customers = [
-            {'nombre': 'Pedro', 'apellido': 'Paramo', 'rut': 1980, 'email': 'pparamo@example.com', 'telefono': 171800200171}, 
-            {'nombre': 'Alberto', 'apellido': 'Borges', 'rut': 1190, 'email': 'alberto.borges@example.com', 'telefono': 800360360}
-        ]
+    customers = []
+    customers = fetch_customers(connection, customers)
     
     daily_sales = []
 

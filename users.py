@@ -18,7 +18,7 @@ def fetch_users(connection, users):
 
     return users
 
-def insert_users(connection, user):
+def insert_user(connection, user):
     cursor = connection.cursor()
 
     existing_query = 'SELECT COUNT(*) FROM USERS WHERE username = :username'
@@ -27,7 +27,9 @@ def insert_users(connection, user):
 
     if count == 0:
         insert_query = 'INSERT INTO USERS (username, password) VALUES (:username, :password)'
+
         cursor.execute(insert_query, username = user['username'], password = user['password'])
+        
         print('El usuario:', user['username'], 'ha sido agregado a la base de datos')
     else:
         print('El usuario:', user['username'], 'ya existe en la base de datos')
