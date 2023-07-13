@@ -1,5 +1,7 @@
 import cx_Oracle
+
 from products import fetch_products, insert_products, update_product_stock
+from users import fetch_users, insert_users
 
 cx_Oracle.init_oracle_client(lib_dir="/Users/esteban/Downloads/instantclient_19_8")
 
@@ -86,6 +88,9 @@ def create_user(users):
         new_user = {'username': username, 'password': password}
         users.append(new_user)
         print('--*** Usuario creado con exito! ***--')
+
+        insert_users(connection, new_user)     
+
     else: 
         print('**** Usuario o contraseña invalidos para crear usuarios ****')
         return
@@ -358,7 +363,6 @@ def daily_closure(daily_sales, closure_report):
 def main_menu():
     running = True
 
-    # products = import_data_from_excel(products_data_file) if products_data_exists else 
     products = []
     products = fetch_products(connection, products)
     
@@ -409,10 +413,8 @@ def main_menu():
 ## Con este codigo hacemos correr el menu de inicio de sesion.
 running = True
 
-# Aca usando if else shorthand, le damos dos opciones a la variable para ser llenada con data, si users_data_exists es True, se llama a la funcion import_data_from_excel usando como argumento el path al documento que contiene la data de los usuarios, de no ser False, se le asignan valores predeterminados.
-# users = import_data_from_excel(users_data_file) if users_data_exists else
-
-users = [{'username': 'benjamin', 'password': 'pass'}, {'username': 'evelyn', 'password': 'pass'}, {'username': 'rafael', 'password': 'pass'}]
+users = []
+users = fetch_users(connection, users)
 
 current_user = []
 
