@@ -1,5 +1,3 @@
-
-
 def fetch_products(connection, products):
     cursor = connection.cursor()
 
@@ -37,6 +35,16 @@ def insert_products(connection, products):
             print("El producto:", product['nombre'], 'ha sido agregado a la base de datos.')
         else:
             print("El producto:", product['nombre'], 'ya existe en la base de datos.')
+
+    connection.commit()
+
+    cursor.close()
+
+def update_product_stock(connection, product_code, new_stock):
+    cursor = connection.cursor()
+
+    update_query = "UPDATE PRODUCTS SET stock = :new_stock WHERE codigo = :product_code"
+    cursor.execute(update_query, new_stock=new_stock, product_code=product_code)
 
     connection.commit()
 

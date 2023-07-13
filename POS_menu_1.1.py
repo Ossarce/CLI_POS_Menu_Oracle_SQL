@@ -1,5 +1,5 @@
 import cx_Oracle
-from products import fetch_products, insert_products
+from products import fetch_products, insert_products, update_product_stock
 
 cx_Oracle.init_oracle_client(lib_dir="/Users/esteban/Downloads/instantclient_19_8")
 
@@ -206,7 +206,7 @@ def show_customers(customers):
             print('----------------------------------------')
 
 # Esta funcion es la que hará la venta, pide el rut del cliente y lo busca en la lista, de no existir preguntará si deseas crearlo -si la opcion es no, volvera al menu anterior- al crearlo la venta prosigue, crea una boleta como diccionario y la guarda en la lista daily_sales ademas de actualizar el stock e informar si la cantidad saliente es mayor a la disponible.
-def sale(customers, products, daily_sales):
+def sale(customers, products, daily_sales, connection):
     print('*** Generando una venta ***\n')
 
     print('Ingrese RUT del cliente: ')
@@ -284,7 +284,7 @@ def sale(customers, products, daily_sales):
         }
 
         product["stock"] -= cantidad
-
+    update_product_stock(connection, product['codigo'], product['stock'])
     daily_sales.append(boleta)
     print('--- Venta registrada exitosamente! ---')
 
@@ -293,10 +293,11 @@ def sale(customers, products, daily_sales):
 # Muestra la ventas realizadas hasta el momento, de no haber da un aviso
 def show_daily_sales(daily_sales):
     print('*** Ventas Diarias ***\n')
-
+    
     if not daily_sales:
         print('Aun no se han realizado ventas.')
     else: 
+        print(daily_sales)
         for boleta in daily_sales:
             print("Cliente: ", boleta["cliente"]["nombre"])
             print("RUT: ", boleta["cliente"]["rut"])
@@ -396,7 +397,7 @@ def main_menu():
             elif choice == 4:
                 show_customers(customers)
             elif choice == 5:
-                sale(customers, products, daily_sales)
+                sale(customers, products, daily_sales, connection)
             elif choice == 6:
                 show_daily_sales(daily_sales)
             elif choice == 7:
