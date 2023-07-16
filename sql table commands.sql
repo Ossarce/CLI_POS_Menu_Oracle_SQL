@@ -46,7 +46,7 @@ CREATE TABLE receipt_detail (
   CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(product_id)
 );
 
--- Here are the sequences and triggers
+-- Estos son los sequences y triggers (Crean las ids de forma automatica)
 -- Products
 CREATE SEQUENCE product_id_seq START WITH 1 INCREMENT BY 1;
 

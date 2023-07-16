@@ -37,7 +37,6 @@ def insert_customer(connection, customer):
         
         connection.commit()
 
-        # Fetch the generated customer_id using a separate query
         fetch_customer_id_query = 'SELECT customer_id FROM CUSTOMERS WHERE rut = :rut'
         cursor.execute(fetch_customer_id_query, rut=customer['rut'])
         generated_customer_id = cursor.fetchone()[0]
