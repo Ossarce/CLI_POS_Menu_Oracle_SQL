@@ -1,10 +1,11 @@
 import cx_Oracle
 import datetime
 
-from products import fetch_products, insert_product, update_product_stock
-from users import fetch_users, insert_user
-from customers import fetch_customers, insert_customer
-from sales import insert_receipt, insert_receipt_detail
+from products import fetch_products, insert_product,get_products, update_product_stock
+from users import fetch_users, insert_user, get_users
+from customers import fetch_customers, insert_customer, get_customers
+from sales import insert_receipt, insert_receipt_detail, get_daily_sales
+from reports import get_total_sales, get_cashier_username, get_payment_types, get_categories
 
 cx_Oracle.init_oracle_client(lib_dir="/Users/esteban/Downloads/instantclient_19_8")
 
@@ -103,14 +104,15 @@ def create_user(users):
         return
 
 # Muestra los usuarios registrados hasta el momento, de no haber da un aviso.
-def show_users(users):
+def show_users(connection):
+    users = get_users(connection)
     print('**** Listado de Usuarios ****\n')
 
     if not users:
-        print('--- No hay usurios registrados ---')
+        print('--- No hay usuarios registrados ---')
     else:
         for user in users:
-            print(f"Nombre de Usuario: {user['username']}")
+            print(f"Nombre de Usuario: {user}")
             print('----------------------------------------')
 
 ###################################################################################################
@@ -157,17 +159,20 @@ def create_product(products, connection):
         print('Opcion invalida! Favor escoja una nuevamente.')
 
 # Muestra los productos y de no haber ninguno lo informa.
-def show_products(products):
+def show_products(connection):
+    products = get_products(connection)
+
     print('*** Listado de Productos ***\n')
     if not products:
-        print('No se han ingresado productos.')
+        print('No se han ingresado productos.') 
     else:
         for product in products:
-            print(f"Codigo Producto: {product['codigo']}")
-            print(f"Nombre Producto: {product['nombre']}")
-            print(f"Categoria Producto: {product['categoria']}")
-            print(f"Stock Producto: {product['stock']}")
-            print(f"Precio Producto: {product['precio']}")
+            codigo, nombre, categoria, stock, precio = product
+            print(f"Codigo Producto: {codigo}")
+            print(f"Nombre Producto: {nombre}")
+            print(f"Categoria Producto: {categoria}")
+            print(f"Stock Producto: {stock}")
+            print(f"Precio Producto: {precio}")
             print('--------------------------------')
 
 # Es igual a la de crear productos, crea un usuario como diccionario y lo agrega a la lista customers.
@@ -212,17 +217,19 @@ def create_customer(customers, connection):
         print('Opcion invalida! Favor escoja nuevamente.')
 
 # Muestra los usuarios y de no haber ninguno da un aviso.
-def show_customers(customers):
+def show_customers(connection):
+    customers = get_customers(connection)
     print('*** Listado de clientes ***\n')
     if not customers:
         print('No se han registrados clientes.')
-    else:    
+    else:
         for customer in customers:
-            full_name = f"{customer['nombre']} {customer['apellido']}"
+            nombre, apellido, rut, email, telefono = customer
+            full_name = f"{nombre} {apellido}"
             print(f"Nombre Completo: {full_name}")
-            print(f"RUT Cliente: {customer['rut']}")
-            print(f"Correo Cliente: {customer['email']}")
-            print(f"Telefono Cliente: {customer['telefono']}")
+            print(f"RUT Cliente: {rut}")
+            print(f"Correo Cliente: {email}")
+            print(f"Telefono Cliente: {telefono}")
             print('----------------------------------------')
 
 # Esta funcion es la que hará la venta, pide el rut del cliente y lo busca en la lista, de no existir preguntará si deseas crearlo -si la opcion es no, volvera al menu anterior- al crearlo la venta prosigue, crea una boleta como diccionario y la guarda en la lista daily_sales ademas de actualizar el stock e informar si la cantidad saliente es mayor a la disponible.
@@ -260,10 +267,8 @@ def sale(current_user, customers, products, daily_sales, connection):
 
     receipt_date = datetime.date.today().strftime("%d-%m-%Y")
 
-    # Insert sale information into the `receipt` table
     insert_receipt(connection, customer['customer_id'], current_user[0]['user_id'], payment_method, receipt_date)
 
-    # Get the generated receipt_id
     receipt_id = cursor.execute("SELECT receipt_id FROM receipt WHERE ROWNUM = 1 ORDER BY receipt_id DESC").fetchone()[0]
 
     boleta = {
@@ -304,10 +309,9 @@ def sale(current_user, customers, products, daily_sales, connection):
         precio_unitario = product["precio"]
         precio_total = precio_unitario * cantidad
         product_id = product['product_id']
-        # Insert sale details into the `receipt_detail` table
+
         insert_receipt_detail(connection, receipt_id, product_id, cantidad, precio_unitario, precio_total)
 
-        # Update the product stock in the `products` table
         for p in products:
             if p['codigo'] == codigo_producto:
                 p['stock'] -= cantidad
@@ -329,50 +333,42 @@ def sale(current_user, customers, products, daily_sales, connection):
     print('--- Venta registrada exitosamente! ---')
 
 # Muestra la ventas realizadas hasta el momento, de no haber da un aviso
-def show_daily_sales(daily_sales):
+def show_daily_sales(connection):
+    daily_sales = get_daily_sales(connection)
+
     print('*** Ventas Diarias ***\n')
-    
+
     if not daily_sales:
         print('Aun no se han realizado ventas.')
-    else: 
-        print(daily_sales)
-        for boleta in daily_sales:
-            print("Cliente: ", boleta["cliente"]["nombre"])
-            print("RUT: ", boleta["cliente"]["rut"])
-            print("Tipo de pago: ", boleta["tipo_pago"])
+    else:
+        for sale in daily_sales:
+            receipt_id, customer_name, rut, payment_method, product_id, product_name, quantity, subtotal = sale
+            print("Cliente:", customer_name)
+            print("RUT:", rut)
+            print("Tipo de pago:", payment_method)
             print("Productos:")
+            print("Codigo:", product_id)
+            print("Nombre:", product_name)
+            print("Cantidad:", quantity)
+            print("Precio total:", subtotal)
+            print("---------------")
 
-            for codigo, producto in boleta["productos"].items():
-                print("Codigo:", codigo)
-                print("Nombre:", producto["nombre"])
-                print("Cantidad:", producto["cantidad"])
-                print("Precio total:", producto["precio_total"])
-                print("---------------")
-
-            total_price = sum(producto["precio_total"] for producto in boleta["productos"].values())
-            print("Total a pagar:", total_price)
-            print("-------------------------------\n")
-
-    return
+        total_price = sum(sale[-1] for sale in daily_sales)
+        print("Total a pagar:", total_price)
+        print("-------------------------------\n")
 
 # Genera un reporte para el cierre del dia y cierra el programa
-def daily_closure(daily_sales, closure_report):
-    print('**** Reporte Diario ****\n')
-    total_sales = 0
-    payment_types = {}
-    categories = set()
+def daily_closure(current_user, connection, closure_report):
+    cursor = connection.cursor()
 
-    for boleta in daily_sales:
-        total_sales += sum(producto["precio_total"] for producto in boleta["productos"].values())
+    total_sales = get_total_sales(cursor)
+    cashier_username = get_cashier_username(current_user)
+    payment_types = get_payment_types(cursor)
+    categories = get_categories(cursor)
 
-        payment_method = boleta["tipo_pago"]
-        payment_types[payment_method] = payment_types.get(payment_method, 0) + 1
-
-        for producto in boleta["productos"].values():
-            categories.add(producto["categoria"])
-
+    print("**** Reporte Diario ****\n")
     print("Ventas totales del dia:", total_sales)
-    print('Cajero del dia:', current_user[0]['username'])
+    print('Cajero del dia:', cashier_username)
     print("Tipos de pago:")
     for payment_method, count in payment_types.items():
         print(f"- {payment_method}: {count}")
@@ -382,11 +378,13 @@ def daily_closure(daily_sales, closure_report):
 
     report = {
         'ventas_totales': total_sales,
-        'cajero': current_user[0]['username'],
+        'cajero': cashier_username,
         'pagos': payment_types,
-        'categorias': list(categories)
+        'categorias': categories
     }
     closure_report.append(report)
+
+    cursor.close()
 
     print('\n')
 
@@ -425,17 +423,17 @@ def main_menu():
             if choice == 1:
                 create_product(products, connection)
             elif choice == 2:
-                show_products(products)
+                show_products(connection)
             elif choice == 3:
                 create_customer(customers, connection)
             elif choice == 4:
-                show_customers(customers)
+                show_customers(connection)
             elif choice == 5:
                 sale(current_user, customers, products, daily_sales, connection)
             elif choice == 6:
-                show_daily_sales(daily_sales)
+                show_daily_sales(connection)
             elif choice == 7:
-                daily_closure(daily_sales, closure_report)
+                daily_closure(current_user, connection, closure_report)
         else:
             print("Opcion invalida. Favor intenta nuevamente.")
 
@@ -458,7 +456,7 @@ while running:
     elif login_choice == 2:
         create_user(users)
     elif login_choice == 3:
-        show_users(users)
+        show_users(connection)
     elif login_choice == 4:
         print("Hasta Pronto!")
         running = False

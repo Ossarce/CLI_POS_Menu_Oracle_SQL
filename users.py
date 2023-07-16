@@ -43,3 +43,10 @@ def insert_user(connection, user):
     cursor.close()
 
     return generated_user_id
+
+def get_users(connection):
+    cursor = connection.cursor()
+    users_query = "SELECT username FROM users"
+    cursor.execute(users_query)
+    users = {row[0] for row in cursor}
+    return users

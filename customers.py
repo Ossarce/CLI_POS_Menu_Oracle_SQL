@@ -51,16 +51,9 @@ def insert_customer(connection, customer):
 
     return generated_customer_id
 
-
-
-
-
-# def get_customer_id(connection, rut):
-#     cursor = connection.cursor()
-#     query = "SELECT customer_id FROM customers WHERE rut = :rut"
-#     cursor.execute(query, rut=rut)
-#     row = cursor.fetchone()
-#     if row:
-#         return row[0]
-#     else:
-#         return None
+def get_customers(connection):
+    cursor = connection.cursor()
+    select_query = "SELECT nombre, apellido, rut, email, telefono FROM customers"
+    cursor.execute(select_query)
+    customers = cursor.fetchall()
+    return customers

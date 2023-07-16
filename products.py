@@ -47,6 +47,14 @@ def insert_product(connection, products):
 
     return generated_product_id
 
+def get_products(connection):
+    cursor = connection.cursor()
+    select_query = "SELECT codigo, nombre, categoria, stock, precio FROM products"
+    cursor.execute(select_query)
+    products = cursor.fetchall()
+    return products
+
+
 def update_product_stock(connection, product_code, new_stock):
     cursor = connection.cursor()
 
