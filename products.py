@@ -7,11 +7,12 @@ def fetch_products(connection, products):
         print(row)
 
         product = {
-            'codigo': row[0],
-            'nombre': row[1],
-            'categoria': row[2],
-            'stock': row[3],
-            'precio': row[4],
+            'product_id': row[0],
+            'codigo': row[1],
+            'nombre': row[2],
+            'categoria': row[3],
+            'stock': row[4],
+            'precio': row[5],
         }
 
         products.append(product)
@@ -20,7 +21,7 @@ def fetch_products(connection, products):
 
     return products
 
-def insert_products(connection, products):
+def insert_product(connection, products):
     cursor = connection.cursor()
 
     for product in products:
@@ -32,13 +33,19 @@ def insert_products(connection, products):
             insert_query = "INSERT INTO PRODUCTS (codigo, nombre, categoria, stock, precio) " \
                            "VALUES (:codigo, :nombre, :categoria, :stock, :precio)"
             cursor.execute(insert_query, product)
+
+            connection.commit()
+            fetch_product_id_query = 'SELECT product_id FROM PRODUCTS WHERE codigo = :codigo'
+            cursor.execute(fetch_product_id_query, codigo = product['codigo'])
+            generated_product_id = cursor.fetchone()[0]
             print("El producto:", product['nombre'], 'ha sido agregado a la base de datos.')
         else:
             print("El producto:", product['nombre'], 'ya existe en la base de datos.')
-
-    connection.commit()
+            generated_product_id = None
 
     cursor.close()
+
+    return generated_product_id
 
 def update_product_stock(connection, product_code, new_stock):
     cursor = connection.cursor()

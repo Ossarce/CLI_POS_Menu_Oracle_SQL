@@ -1,8 +1,10 @@
 import cx_Oracle
+import datetime
 
-from products import fetch_products, insert_products, update_product_stock
+from products import fetch_products, insert_product, update_product_stock
 from users import fetch_users, insert_user
 from customers import fetch_customers, insert_customer
+from sales import insert_receipt, insert_receipt_detail
 
 cx_Oracle.init_oracle_client(lib_dir="/Users/esteban/Downloads/instantclient_19_8")
 
@@ -58,9 +60,8 @@ def login(users, current_user):
 
         for user in users:
             if user["username"] == username and user["password"] == password:
-                cashier = {"username": username, "password": password}
-                current_user.append(cashier)
-
+                user_id = user['user_id']
+                current_user.append({'user_id': user_id, 'username': username})
                 login_successful = True
                 break
 
@@ -86,11 +87,16 @@ def create_user(users):
         username = input()
         print('Ingrese contraseña: ')
         password = input()
-        new_user = {'username': username, 'password': password}
+        new_user = {
+            'user_id': None,
+            'username': username, 
+            'password': password}
         users.append(new_user)
         print('--*** Usuario creado con exito! ***--')
 
-        insert_user(connection, new_user)     
+        user_id = insert_user(connection, new_user)
+        new_user['user_id'] = user_id
+        print(new_user)
 
     else: 
         print('**** Usuario o contraseña invalidos para crear usuarios ****')
@@ -127,6 +133,7 @@ def create_product(products, connection):
     precio = validate_number_input()
 
     product_info = {
+        "product_id": None,
         "codigo": codigo,
         "nombre": nombre,
         "categoria": categoria,
@@ -137,12 +144,13 @@ def create_product(products, connection):
     products.append(product_info)
     print('*** Producto creado con exito! ***')
 
-    insert_products(connection, products)
+    product_id = insert_product(connection, product_info)
+    product_info['product_id'] = product_id
 
     print('Deseas crear otro producto? (Y/N): ')
     choice = input()
     if choice.lower() == "y":
-        create_product(products)
+        create_product(products, connection)
     elif choice.lower() == "n":
         return
     else:
@@ -163,13 +171,13 @@ def show_products(products):
             print('--------------------------------')
 
 # Es igual a la de crear productos, crea un usuario como diccionario y lo agrega a la lista customers.
-def create_customer(customers):
+def create_customer(customers, connection):
     print('*** Creando un nuevo cliente ***\n')
 
     print('Ingresa el nombre del cliente: ')
     nombre = input()
     print('Ingresa el apellido del cliente: ')
-    apellido= input()
+    apellido = input()
     print('Ingresa el RUT del cliente: ')
     rut = validate_number_input()
     print('Ingresa el correo del cliente: ')
@@ -178,6 +186,7 @@ def create_customer(customers):
     telefono = validate_number_input()
 
     customer_info = {
+        "customer_id": None,
         "nombre": nombre,
         "apellido": apellido,
         "rut": rut,
@@ -187,12 +196,16 @@ def create_customer(customers):
 
     customers.append(customer_info)
     print('Cliente creado existosamente!')
-    insert_customer(connection, customer_info)
+
+    customer_id = insert_customer(connection, customer_info)  
+    customer_info["customer_id"] = customer_id
+    print(customer_info)
+
 
     print('Deseas crear otro cliente? (Y/N): ')
     choice = input()
     if choice.lower() == "y":
-        create_customer(customers)
+        create_customer(customers, connection)
     elif choice.lower() == "n":
         return
     else:
@@ -213,8 +226,10 @@ def show_customers(customers):
             print('----------------------------------------')
 
 # Esta funcion es la que hará la venta, pide el rut del cliente y lo busca en la lista, de no existir preguntará si deseas crearlo -si la opcion es no, volvera al menu anterior- al crearlo la venta prosigue, crea una boleta como diccionario y la guarda en la lista daily_sales ademas de actualizar el stock e informar si la cantidad saliente es mayor a la disponible.
-def sale(customers, products, daily_sales, connection):
+def sale(current_user, customers, products, daily_sales, connection):
     print('*** Generando una venta ***\n')
+
+    cursor = connection.cursor()
 
     print('Ingrese RUT del cliente: ')
     rut = validate_number_input()
@@ -230,8 +245,7 @@ def sale(customers, products, daily_sales, connection):
             print('Cliente no encontrado. Desea crearlo?: (Y/N)')
             choice = input()
             if choice.lower() == 'y':
-                create_customer(customers)
-                # print(customers[-1]) si descomentan esta linea pueden ver en la terminal por qué en la linea de abajo se usa "-1" para acceder a la variable customers.
+                create_customer(customers, connection)
                 customer = customers[-1]
                 break
             elif choice.lower() == 'n':
@@ -243,6 +257,14 @@ def sale(customers, products, daily_sales, connection):
     
     print('Ingrese el tipo de pago: ')
     payment_method = input()
+
+    receipt_date = datetime.date.today().strftime("%d-%m-%Y")
+
+    # Insert sale information into the `receipt` table
+    insert_receipt(connection, customer['customer_id'], current_user[0]['user_id'], payment_method, receipt_date)
+
+    # Get the generated receipt_id
+    receipt_id = cursor.execute("SELECT receipt_id FROM receipt WHERE ROWNUM = 1 ORDER BY receipt_id DESC").fetchone()[0]
 
     boleta = {
         "cliente": customer,
@@ -281,6 +303,16 @@ def sale(customers, products, daily_sales, connection):
 
         precio_unitario = product["precio"]
         precio_total = precio_unitario * cantidad
+        product_id = product['product_id']
+        # Insert sale details into the `receipt_detail` table
+        insert_receipt_detail(connection, receipt_id, product_id, cantidad, precio_unitario, precio_total)
+
+        # Update the product stock in the `products` table
+        for p in products:
+            if p['codigo'] == codigo_producto:
+                p['stock'] -= cantidad
+                update_product_stock(connection, codigo_producto, p['stock'])
+                break
 
         boleta["productos"][codigo_producto] = {
             "nombre": product["nombre"],
@@ -290,12 +322,11 @@ def sale(customers, products, daily_sales, connection):
             "precio_total": precio_total
         }
 
-        product["stock"] -= cantidad
-    update_product_stock(connection, product['codigo'], product['stock'])
+    connection.commit()
+    cursor.close()
+
     daily_sales.append(boleta)
     print('--- Venta registrada exitosamente! ---')
-
-    return
 
 # Muestra la ventas realizadas hasta el momento, de no haber da un aviso
 def show_daily_sales(daily_sales):
@@ -396,11 +427,11 @@ def main_menu():
             elif choice == 2:
                 show_products(products)
             elif choice == 3:
-                create_customer(customers)
+                create_customer(customers, connection)
             elif choice == 4:
                 show_customers(customers)
             elif choice == 5:
-                sale(customers, products, daily_sales, connection)
+                sale(current_user, customers, products, daily_sales, connection)
             elif choice == 6:
                 show_daily_sales(daily_sales)
             elif choice == 7:
@@ -422,7 +453,7 @@ while running:
 
     if login_choice == 1:
         if login(users, current_user):
-            #Si el inicio de sesion es exitoso, comenzará a correr el menu POS(productos, clientes, ventas y reportes)
+            print(current_user[0]['user_id'])
             main_menu()
     elif login_choice == 2:
         create_user(users)
