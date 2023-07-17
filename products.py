@@ -21,27 +21,26 @@ def fetch_products(connection, products):
 
     return products
 
-def insert_product(connection, products):
+def insert_product(connection, product):
     cursor = connection.cursor()
 
-    for product in products:
-        existing_query = "SELECT COUNT(*) FROM PRODUCTS WHERE CODIGO = :codigo"
-        cursor.execute(existing_query, codigo =product['codigo'])
-        count = cursor.fetchone()[0]
+    existing_query = "SELECT COUNT(*) FROM PRODUCTS WHERE CODIGO = :codigo"
+    cursor.execute(existing_query, codigo =product['codigo'])
+    count = cursor.fetchone()[0]
 
-        if count == 0:
-            insert_query = "INSERT INTO PRODUCTS (codigo, nombre, categoria, stock, precio) " \
-                           "VALUES (:codigo, :nombre, :categoria, :stock, :precio)"
-            cursor.execute(insert_query, product)
+    if count == 0:
+        insert_query = "INSERT INTO PRODUCTS (codigo, nombre, categoria, stock, precio) " \
+                        "VALUES (:codigo, :nombre, :categoria, :stock, :precio)"
+        cursor.execute(insert_query, product)
 
-            connection.commit()
-            fetch_product_id_query = 'SELECT product_id FROM PRODUCTS WHERE codigo = :codigo'
-            cursor.execute(fetch_product_id_query, codigo = product['codigo'])
-            generated_product_id = cursor.fetchone()[0]
-            print("El producto:", product['nombre'], 'ha sido agregado a la base de datos.')
-        else:
-            print("El producto:", product['nombre'], 'ya existe en la base de datos.')
-            generated_product_id = None
+        connection.commit()
+        fetch_product_id_query = 'SELECT product_id FROM PRODUCTS WHERE codigo = :codigo'
+        cursor.execute(fetch_product_id_query, codigo = product['codigo'])
+        generated_product_id = cursor.fetchone()[0]
+        print("El producto:", product['nombre'], 'ha sido agregado a la base de datos.')
+    else:
+        print("El producto:", product['nombre'], 'ya existe en la base de datos.')
+        generated_product_id = None
 
     cursor.close()
 

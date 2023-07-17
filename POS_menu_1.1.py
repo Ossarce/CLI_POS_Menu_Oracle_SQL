@@ -1,4 +1,5 @@
 import cx_Oracle
+
 import datetime
 
 from products import fetch_products, insert_product,get_products, update_product_stock
@@ -142,7 +143,6 @@ def create_product(products, connection):
         "stock": stock,
         "precio": precio
     }
-
     products.append(product_info)
     print('*** Producto creado con exito! ***')
 
@@ -341,21 +341,43 @@ def show_daily_sales(connection):
     if not daily_sales:
         print('Aun no se han realizado ventas.')
     else:
-        for sale in daily_sales:
-            receipt_id, customer_name, rut, payment_method, product_id, product_name, quantity, subtotal = sale
-            print("Cliente:", customer_name)
-            print("RUT:", rut)
-            print("Tipo de pago:", payment_method)
-            print("Productos:")
-            print("Codigo:", product_id)
-            print("Nombre:", product_name)
-            print("Cantidad:", quantity)
-            print("Precio total:", subtotal)
-            print("---------------")
+        receipts = {} 
 
-        total_price = sum(sale[-1] for sale in daily_sales)
-        print("Total a pagar:", total_price)
-        print("-------------------------------\n")
+        for receipt_data in daily_sales:
+            receipt_id, customer_name, rut, payment_method, product_id, product_name, quantity, subtotal = receipt_data
+            
+            if receipt_id not in receipts:
+                receipts[receipt_id] = {
+                    'customer_name': customer_name,
+                    'rut': rut,
+                    'payment_method': payment_method,
+                    'products': [],
+                    'total_price': 0
+                }
+
+            receipts[receipt_id]['products'].append({
+                'product_id': product_id,
+                'product_name': product_name,
+                'quantity': quantity,
+                'subtotal': subtotal
+            })
+            receipts[receipt_id]['total_price'] += subtotal
+
+        for receipt_id, receipt in receipts.items():
+            print("Cliente:", receipt['customer_name'])
+            print("RUT:", receipt['rut'])
+            print("Tipo de pago:", receipt['payment_method'])
+            print("Productos:")
+            
+            for product in receipt['products']:
+                print("Codigo:", product['product_id'])
+                print("Nombre:", product['product_name'])
+                print("Cantidad:", product['quantity'])
+                print("Precio total:", product['subtotal'])
+                print("---------------")
+
+            print("Total a pagar:", receipt['total_price'])
+            print("-------------------------------\n")
 
 # Genera un reporte para el cierre del dia y cierra el programa
 def daily_closure(current_user, connection, closure_report):
