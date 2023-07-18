@@ -1,5 +1,5 @@
-# CLI_POS_Menu_Oracle_SQL
-A CLI POS Menu using Oracle SQL Developer.
+# Python CLI POS Menu with SQL Developer
+A Python CLI POS Menu using Oracle SQL Developer.
 
 This project originated as a work for my first year of computer engineering (2023) -the original was supposed to rely on .txt file but I used Pandas instead to use excel files (you can check that project in my respositores too!-, but I have enjoyed it so much that I started modifying it, adding modularity to achieve cleaner and more maintainable code. Below you can find a list of things I plan to add throughout the year. (They don't have specific dates yet as it has become a side project that has brought me many challenges, good times and learnings about Python.)
   
