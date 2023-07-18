@@ -25,17 +25,17 @@ def insert_product(connection, product):
     cursor = connection.cursor()
 
     existing_query = "SELECT COUNT(*) FROM PRODUCTS WHERE CODIGO = :codigo"
-    cursor.execute(existing_query, codigo =product['codigo'])
+    cursor.execute(existing_query, codigo=product['codigo'])
     count = cursor.fetchone()[0]
 
     if count == 0:
         insert_query = "INSERT INTO PRODUCTS (codigo, nombre, categoria, stock, precio) " \
-                        "VALUES (:codigo, :nombre, :categoria, :stock, :precio)"
-        cursor.execute(insert_query, product)
+                       "VALUES (:codigo, :nombre, :categoria, :stock, :precio)"
+        cursor.execute(insert_query, codigo=product['codigo'], nombre=product['nombre'], categoria=product['categoria'], stock=product['stock'], precio=product['precio'])
 
         connection.commit()
         fetch_product_id_query = 'SELECT product_id FROM PRODUCTS WHERE codigo = :codigo'
-        cursor.execute(fetch_product_id_query, codigo = product['codigo'])
+        cursor.execute(fetch_product_id_query, codigo=product['codigo'])
         generated_product_id = cursor.fetchone()[0]
         print("El producto:", product['nombre'], 'ha sido agregado a la base de datos.')
     else:
@@ -45,6 +45,7 @@ def insert_product(connection, product):
     cursor.close()
 
     return generated_product_id
+
 
 def get_products(connection):
     cursor = connection.cursor()
